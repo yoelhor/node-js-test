@@ -16,14 +16,24 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var authRouter = require('./routes/auth');
 
+// Added by Yoel
+var bodyParser = require('body-parser')
+const authProvider = require('./auth/AuthProvider');
+const { REDIRECT_URI, POST_LOGOUT_REDIRECT_URI } = require('./authConfig');
+// End of new section
+
 // initialize express
 var app = express();
+
+// Added by Yoel
+app.use(bodyParser.urlencoded())
+// End of new section
 
 /**
  * Using express-session middleware for persistent user session. Be sure to
  * familiarize yourself with available options. Visit: https://www.npmjs.com/package/express-session
  */
- app.use(session({
+app.use(session({
     secret: process.env.EXPRESS_SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
@@ -32,6 +42,17 @@ var app = express();
         secure: false, // set this to true on production
     }
 }));
+
+// Added by Yoel
+app.get('/test', (req, res) => {
+    res.send('Successful response.');
+});
+
+app.post('/redirect', async (req, res) => {
+    console.log("My custom redirect function")
+    await authProvider.customHandleRedirect(req, res);
+});
+// End of new section
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -62,5 +83,9 @@ app.use(function (err, req, res, next) {
     res.status(err.status || 500);
     res.render('error');
 });
+
+
+
+//router.post('/redirect', authProvider.handleRedirect());
 
 module.exports = app;

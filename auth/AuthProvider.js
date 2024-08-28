@@ -154,6 +154,49 @@ class AuthProvider {
         }
     }
 
+    // Added by Yoel
+    async customHandleRedirect(req, res) {
+
+        console.log("***** customHandleRedirect async started")
+        if (!req.body || !req.body.state) {
+            //return next(new Error('Error: response not found'));
+            console.log("***** ERROR (1)")
+            return;
+        }
+
+        const authCodeRequest = {
+            ...req.session.authCodeRequest,
+            code: req.body.code,
+            codeVerifier: req.session.pkceCodes.verifier,
+        };
+
+        try {
+            const msalInstance = this.getMsalInstance(this.msalConfig);
+
+            if (req.session.tokenCache) {
+                msalInstance.getTokenCache().deserialize(req.session.tokenCache);
+            }
+
+            const tokenResponse = await msalInstance.acquireTokenByCode(authCodeRequest, req.body);
+
+            req.session.tokenCache = msalInstance.getTokenCache().serialize();
+            req.session.idToken = tokenResponse.idToken;
+            req.session.account = tokenResponse.account;
+            req.session.isAuthenticated = true;
+
+            const state = JSON.parse(this.cryptoProvider.base64Decode(req.body.state));
+
+            console.log("***** handleRedirect completed")
+
+            res.redirect(state.successRedirect);
+        } catch (error) {
+            console.log("***** handleRedirect ERROR")
+            console.log(error);
+            //next(error);
+        }
+    }
+    // End of new section
+
     logout(options = {}) {
         return (req, res, next) => {
 
